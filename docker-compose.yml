@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postermanagement:
+    build: .
+    container_name: poster-management
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/config
+      - ./data:/data
+      - ./backups:/backups
+      - ./app:/app:ro  # Read-only mount for development
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app
+      - FLASK_DEBUG=1
+      - PYTHONUNBUFFERED=1
+    networks:
+      - poster-network
+
+networks:
+  poster-network:
+    driver: bridge

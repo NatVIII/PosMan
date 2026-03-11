@@ -1,0 +1,28 @@
+# Core Flask
+Flask>=2.3.0
+Jinja2>=3.1.0
+Werkzeug>=2.3.0
+
+# Authentication
+bcrypt>=4.0.0
+
+# Configuration
+PyYAML>=6.0
+
+# Image processing
+Pillow>=10.0.0
+qrcode[pil]>=7.4.0
+
+# PDF processing
+pypdf>=3.0.0
+reportlab>=4.0.0
+pdf2image>=1.16.0
+
+# CSV migration (optional)
+pandas>=2.0.0
+
+# File locking
+portalocker>=2.7.0
+
+# Development
+python-dotenv>=1.0.0

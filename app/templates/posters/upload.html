@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Poster - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Upload Poster</h1>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="pdf_file" class="form-label">PDF File *</label>
+                            <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                            <div class="form-text">Upload the poster PDF file (max 200MB).</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                            <div class="form-text">Descriptive title of the poster.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="source" class="form-label">Source</label>
+                                    <input type="text" class="form-control" id="source" name="source">
+                                    <div class="form-text">e.g., National, Local, Chapter</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="categories" class="form-label">Categories</label>
+                                    <input type="text" class="form-control" id="categories" name="categories">
+                                    <div class="form-text">e.g., Anti-War, Labor, Palestine</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="length" class="form-label">Length (11x17)</label>
+                                    <input type="text" class="form-control" id="length" name="length">
+                                    <div class="form-text">e.g., 13.75"</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">Price ($)</label>
+                                    <input type="number" class="form-control" id="price" name="price" step="0.01" value="12.00">
+                                    <div class="form-text">Default: $12.00</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="attribution" class="form-label">Attribution</label>
+                            <input type="text" class="form-control" id="attribution" name="attribution">
+                            <div class="form-text">Credit line or artist attribution.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="kit" class="form-label">Kit</label>
+                                    <input type="text" class="form-control" id="kit" name="kit">
+                                    <div class="form-text">e.g., Smalls, Large, Premium</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="collection" class="form-label">Collection</label>
+                                    <input type="text" class="form-control" id="collection" name="collection">
+                                    <div class="form-text">e.g., Jaffa, Harlem, Palisades</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="tags" name="tags">
+                            <div class="form-text">Comma-separated tags for search.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="slogans" class="form-label">Slogans</label>
+                            <input type="text" class="form-control" id="slogans" name="slogans" value="@pslvirginia, Dare to struggle, dare to win">
+                            <div class="form-text">Comma-separated slogans for bug page.</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Processing Information</h6>
+                            <p class="mb-0">
+                                After upload, the system will:
+                                <ul class="mb-0">
+                                    <li>Add a bug page with QR code and metadata</li>
+                                    <li>Generate a thumbnail preview</li>
+                                    <li>Rotate landscape posters if needed</li>
+                                    <li>Save to the processed posters directory</li>
+                                </ul>
+                            </p>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('posters.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Upload & Process</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Upload Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <h6>File Requirements</h6>
+                    <ul>
+                        <li>PDF format only</li>
+                        <li>Max file size: 200MB</li>
+                        <li>12x18" with bleed for C368 printing</li>
+                        <li>High resolution (300 DPI recommended)</li>
+                    </ul>
+                    
+                    <h6>Processing</h6>
+                    <ul>
+                        <li>Bug page added automatically</li>
+                        <li>Thumbnail generated from first page</li>
+                        <li>Landscape posters rotated 90°</li>
+                        <li>Files stored in organized directories</li>
+                    </ul>
+                    
+                    <h6>Metadata</h6>
+                    <ul>
+                        <li>Title is required</li>
+                        <li>Other fields are optional</li>
+                        <li>Can be edited later</li>
+                        <li>Used for search and organization</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

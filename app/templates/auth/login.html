@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Login - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Login to Poster Management
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   required autofocus placeholder="Enter username">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-key"></i>
+                            </span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   required placeholder="Enter password">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>
+                            Login
+                        </button>
+                        
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                Default admin credentials: <code>admin</code> / <code>password</code>
+                                <br>
+                                <span class="text-danger">Change immediately after first login!</span>
+                            </small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                <h5 class="card-title">About This System</h5>
+                <p class="card-text">
+                    The Poster Management System helps organize and process posters for printing.
+                    Contact an administrator if you need access.
+                </p>
+                <a href="{{ url_for('main.about') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Learn More
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

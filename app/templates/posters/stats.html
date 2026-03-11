@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Poster Statistics - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('posters.index') }}">Posters</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Statistics</li>
+        </ol>
+    </nav>
+    
+    <h1>Poster Statistics</h1>
+    
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h1 class="display-4">{{ stats.total_posters }}</h1>
+                    <p class="card-text">Total Posters</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h1 class="display-4">{{ stats.total_inventory }}</h1>
+                    <p class="card-text">Total Inventory</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h1 class="display-4">{{ stats.kits }}</h1>
+                    <p class="card-text">Kits</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h1 class="display-4">{{ stats.collections }}</h1>
+                    <p class="card-text">Collections</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recently Uploaded Posters</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats.recent_uploads %}
+                    <div class="list-group">
+                        {% for poster in stats.recent_uploads %}
+                        <a href="{{ url_for('posters.view', poster_id=poster.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ poster.title }}</h6>
+                                    <small class="text-muted">ID: {{ poster.id }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-secondary">{{ poster.inventory_count }}</span>
+                                    <div><small>{{ poster.created_at|datetimeformat('short') if poster.created_at else '—' }}</small></div>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No posters uploaded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('posters.upload') }}" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Upload New Poster
+                        </a>
+                        <a href="{{ url_for('posters.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> View All Posters
+                        </a>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6>Export Options</h6>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="bi bi-filetype-csv"></i> Export CSV (Coming Soon)
+                        </button>
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="bi bi-filetype-pdf"></i> Generate Labels (Coming Soon)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Posters - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Posters</h1>
+        <div>
+            <a href="{{ url_for('posters.upload') }}" class="btn btn-primary">
+                <i class="bi bi-upload"></i> Upload Poster
+            </a>
+            <a href="{{ url_for('posters.stats') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-graph-up"></i> Stats
+            </a>
+        </div>
+    </div>
+
+    {% if posters %}
+    <div class="row">
+        {% for poster in posters %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <a href="{{ url_for('posters.view', poster_id=poster.id) }}">
+                    <img src="{{ url_for('posters.thumbnail', poster_id=poster.id) }}" 
+                         class="card-img-top" 
+                         alt="{{ poster.title }}"
+                         style="height: 200px; object-fit: contain; background-color: #f8f9fa;">
+                </a>
+                <div class="card-body">
+                    <h5 class="card-title">{{ poster.title }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">ID: {{ poster.id }}</small><br>
+                        {% if poster.source %}
+                        <small>Source: {{ poster.source }}</small><br>
+                        {% endif %}
+                        {% if poster.categories %}
+                        <small>Categories: {{ poster.categories }}</small><br>
+                        {% endif %}
+                        <small>Inventory: <span class="badge {% if poster.inventory_count > 0 %}bg-success{% else %}bg-warning{% endif %}">{{ poster.inventory_count }}</span></small>
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('posters.view', poster_id=poster.id) }}" class="btn btn-sm btn-outline-primary">
+                            View
+                        </a>
+                        <a href="{{ url_for('posters.edit', poster_id=poster.id) }}" class="btn btn-sm btn-outline-secondary">
+                            Edit
+                        </a>
+                        {% if user.role == 'admin' %}
+                        <form action="{{ url_for('posters.delete', poster_id=poster.id) }}" method="post" class="d-inline" onsubmit="return confirm('Delete this poster?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-file-earmark-pdf display-1 text-muted"></i>
+        <h3 class="mt-3">No posters yet</h3>
+        <p class="text-muted">Upload your first poster to get started.</p>
+        <a href="{{ url_for('posters.upload') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-upload"></i> Upload Poster
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

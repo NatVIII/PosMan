@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Dashboard
+        </h1>
+        <p class="text-muted">
+            Welcome back, {{ user.username }}! Here's an overview of your poster management system.
+        </p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-2">Total Posters</h6>
+                        <h2 class="mb-0">{{ stats.total_posters|default(0) }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-images"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-primary-dark border-0">
+                <small>
+                    <i class="bi bi-arrow-up-short"></i>
+                    {{ stats.recent_uploads|length|default(0) }} recent uploads
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-2">Kits</h6>
+                        <h2 class="mb-0">{{ stats.kits|default(0) }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-box"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-success-dark border-0">
+                <small>Physical containers for collections</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-2">Collections</h6>
+                        <h2 class="mb-0">{{ stats.collections|default(0) }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="bi bi-collection"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-info-dark border-0">
+                <small>Binders within kits</small>
+            </div>
+        </div>
+    </div>
+    
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-uppercase mb-2">Total Inventory</h6>
+                            <h2 class="mb-0">{{ stats.total_inventory|default(0) }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-warning-dark border-0">
+                    <small>Total posters in inventory</small>
+                </div>
+            </div>
+        </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% if user.is_contributor %}
+                            <div class="col-md-3">
+                                <a href="{{ url_for('posters.upload') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-upload fs-1 mb-2"></i>
+                                    <span>Upload Poster</span>
+                                </a>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <a href="{{ url_for('posters.index') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-collection fs-1 mb-2"></i>
+                                    <span>Manage Posters</span>
+                                </a>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <a href="{{ url_for('posters.stats') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-clipboard-check fs-1 mb-2"></i>
+                                    <span>View Stats</span>
+                                </a>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <a href="{{ url_for('main.system_info') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-gear fs-1 mb-2"></i>
+                                    <span>System Info</span>
+                                </a>
+                            </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            You have viewer permissions. Contact an administrator for upload and management capabilities.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Recent Uploads
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_uploads and stats.recent_uploads|length > 0 %}
+                <div class="list-group list-group-flush">
+                    {% for poster in stats.recent_uploads[:5] %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ poster.title[:30] }}{% if poster.title|length > 30 %}...{% endif %}</h6>
+                            <small>{{ poster.created_at|datetimeformat('short') if poster.created_at else '—' }}</small>
+                        </div>
+                        <p class="mb-1">ID: {{ poster.id }}</p>
+                        <small class="text-muted">Uploaded by {{ poster.created_by or '—' }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                    <p class="text-muted mb-0">No recent uploads</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('posters.index') }}" class="btn btn-sm btn-outline-primary">View All Posters</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    System Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>Authentication System</span>
+                            </div>
+                            <span class="badge bg-success">Operational</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>File Storage</span>
+                            </div>
+                            <span class="badge bg-success">Operational</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-gear text-warning me-2"></i>
+                                <span>PDF Processing</span>
+                            </div>
+                            <span class="badge bg-warning">Under Development</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-gear text-warning me-2"></i>
+                                <span>Label Generation</span>
+                            </div>
+                            <span class="badge bg-warning">Under Development</span>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>FTP Export</span>
+                            </div>
+                            <span class="badge bg-success">Ready</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Last updated: Just now</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

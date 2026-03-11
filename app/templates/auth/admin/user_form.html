@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == 'add' %}Add User{% else %}Edit User{% endif %} - {{ super() }}
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-person-{% if action == 'add' %}plus{% else %}gear{% endif %} me-2"></i>
+            {% if action == 'add' %}Add New User{% else %}Edit User{% endif %}
+        </h1>
+        <p class="text-muted">
+            {% if action == 'add' %}
+            Create a new user account with specific permissions.
+            {% else %}
+            Modify user account details and permissions.
+            {% endif %}
+        </p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('auth.user_list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Users
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" 
+                       value="{{ user.username if user else '' }}" required
+                       {% if action == 'edit' %}readonly{% endif %}>
+                <div class="form-text">
+                    {% if action == 'edit' %}Username cannot be changed.{% else %}Choose a unique username.{% endif %}
+                </div>
+            </div>
+            
+            {% if action == 'add' %}
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+                <div class="form-text">Password must be at least 8 characters long.</div>
+            </div>
+            {% else %}
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="reset_password" name="reset_password">
+                    <label class="form-check-label" for="reset_password">
+                        Reset password
+                    </label>
+                </div>
+                <div class="mt-2" id="new_password_group" style="display: none;">
+                    <label for="new_password" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password">
+                    <div class="form-text">Leave empty to keep current password.</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="mb-3">
+                <label for="role" class="form-label">Role</label>
+                <select class="form-select" id="role" name="role" required>
+                    <option value="viewer" {% if user and user.role == 'viewer' %}selected{% endif %}>Viewer</option>
+                    <option value="contributor" {% if user and user.role == 'contributor' %}selected{% endif %}>Contributor</option>
+                    <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+                <div class="form-text">
+                    <strong>Viewer:</strong> Can view posters and inventory. 
+                    <strong>Contributor:</strong> Can upload and manage posters. 
+                    <strong>Admin:</strong> Full system access including user management.
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="force_password_change" name="force_password_change"
+                           {% if user and user.force_password_change %}checked{% endif %}>
+                    <label class="form-check-label" for="force_password_change">
+                        Force password change on next login
+                    </label>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('auth.user_list') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if action == 'add' %}Create User{% else %}Update User{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if action == 'edit' %}
+<script>
+document.getElementById('reset_password').addEventListener('change', function() {
+    document.getElementById('new_password_group').style.display = this.checked ? 'block' : 'none';
+    if (this.checked) {
+        document.getElementById('new_password').required = true;
+    } else {
+        document.getElementById('new_password').required = false;
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

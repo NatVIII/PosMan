@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}About - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    About Poster Management System
+                </h4>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">System Overview</h5>
+                <p class="card-text">
+                    The Poster Management System is a web-based application designed to streamline
+                    the poster production workflow for the Party for Socialism and Liberation.
+                    It replaces manual Python scripts with an intuitive web interface accessible
+                    via Docker container on a Tailscale network.
+                </p>
+                
+                <h5 class="card-title mt-4">Key Features</h5>
+                <ul>
+                    <li><strong>Web-Based Interface</strong>: Accessible from any device on the Tailscale network</li>
+                    <li><strong>Role-Based Authentication</strong>: Viewer, Contributor, and Admin roles</li>
+                    <li><strong>Automated Bug Generation</strong>: Creates standardized bug pages with QR codes and metadata</li>
+                    <li><strong>Orientation Support</strong>: Automatic rotation for landscape posters</li>
+                    <li><strong>Kit & Collection Management</strong>: Organize posters into physical kits and binder collections</li>
+                    <li><strong>Inventory Tracking</strong>: Track counted and printed posters per collection</li>
+                    <li><strong>Printable Labels</strong>: Generate 8.5×11" kit labels and 11×17" collection labels</li>
+                    <li><strong>FTP Export</strong>: Automatic export of print-ready PDFs to printer FTP directory</li>
+                    <li><strong>File-Based Storage</strong>: All configuration and metadata stored in human-readable YAML/JSON files</li>
+                    <li><strong>Weekly Backups</strong>: Automatic ZIP backups with configurable retention</li>
+                </ul>
+                
+                <h5 class="card-title mt-4">Technical Architecture</h5>
+                <p class="card-text">
+                    The system is built with Flask (Python) using server-rendered Jinja2 templates.
+                    All data is stored in human-readable files (YAML for configuration, JSON for metadata)
+                    to facilitate easy backup, version control, and manual editing when needed.
+                </p>
+                <p class="card-text">
+                    The application runs in a Docker container with persistent volume mounts for
+                    configuration, data storage, and backups. Authentication uses bcrypt password
+                    hashing with session-based access control.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">System Name</dt>
+                    <dd class="col-sm-7">{{ system_name }}</dd>
+                    
+                    <dt class="col-sm-5">Version</dt>
+                    <dd class="col-sm-7">{{ version }}</dd>
+                    
+                    <dt class="col-sm-5">Framework</dt>
+                    <dd class="col-sm-7">Flask (Python)</dd>
+                    
+                    <dt class="col-sm-5">Database</dt>
+                    <dd class="col-sm-7">File-based (YAML/JSON)</dd>
+                    
+                    <dt class="col-sm-5">Authentication</dt>
+                    <dd class="col-sm-7">bcrypt + sessions</dd>
+                    
+                    <dt class="col-sm-5">Container</dt>
+                    <dd class="col-sm-7">Docker (Alpine Linux)</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Security Notes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Important
+                    </h6>
+                    <p class="mb-0">
+                        This system is designed for internal use on a secure Tailscale network.
+                        Default admin credentials should be changed immediately after first login.
+                    </p>
+                </div>
+                
+                <ul class="mb-0">
+                    <li>All passwords are hashed with bcrypt</li>
+                    <li>Session cookies are HTTP-only</li>
+                    <li>File uploads are validated and limited to 200MB</li>
+                    <li>Configuration files are stored separately from application code</li>
+                    <li>Weekly automatic backups to separate volume</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-question-circle me-2"></i>
+                    Getting Help
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    For assistance with the Poster Management System:
+                </p>
+                <ul class="mb-0">
+                    <li>Contact your system administrator for access issues</li>
+                    <li>Report bugs or feature requests to the development team</li>
+                    <li>Refer to the system documentation for user guides</li>
+                    <li>Check the system information page for configuration details</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poster.title }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('posters.index') }}">Posters</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ poster.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h1 class="card-title mb-0">{{ poster.title }}</h1>
+                        <span class="badge bg-secondary">{{ poster.id }}</span>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('posters.download', poster_id=poster.id) }}" class="btn btn-primary">
+                            <i class="bi bi-download"></i> Download PDF
+                        </a>
+                        <a href="{{ url_for('posters.edit', poster_id=poster.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        {% if user.role == 'admin' %}
+                        <form action="{{ url_for('posters.delete', poster_id=poster.id) }}" method="post" class="d-inline" onsubmit="return confirm('Delete this poster?');">
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Poster Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Source</dt>
+                                <dd class="col-sm-8">{{ poster.source or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Categories</dt>
+                                <dd class="col-sm-8">{{ poster.categories or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Attribution</dt>
+                                <dd class="col-sm-8">{{ poster.attribution or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Length (11x17)</dt>
+                                <dd class="col-sm-8">{{ poster.length or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Orientation</dt>
+                                <dd class="col-sm-8">{{ poster.orientation|title or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Dimensions</dt>
+                                <dd class="col-sm-8">
+                                    {% if poster.dimensions.width and poster.dimensions.height %}
+                                    {{ poster.dimensions.width }}×{{ poster.dimensions.height }} pts
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Kit</dt>
+                                <dd class="col-sm-8">{{ poster.kit or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Collection</dt>
+                                <dd class="col-sm-8">{{ poster.collection or '—' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Pricing & Inventory</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Price</dt>
+                                <dd class="col-sm-8">${{ "%.2f"|format(poster.price) }}</dd>
+                                
+                                <dt class="col-sm-4">Price Tier</dt>
+                                <dd class="col-sm-8">{{ poster.price_tier|title or 'Standard' }}</dd>
+                                
+                                <dt class="col-sm-4">Seller</dt>
+                                <dd class="col-sm-8">{{ poster.seller or '—' }}</dd>
+                                
+                                <dt class="col-sm-4">Current Inventory</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge {% if poster.inventory_count > 0 %}bg-success{% else %}bg-warning{% endif %} fs-6">
+                                        {{ poster.inventory_count }}
+                                    </span>
+                                </dd>
+                            </dl>
+                            
+                            <hr>
+                            
+                            <h6>Update Inventory</h6>
+                            <form method="post" action="{{ url_for('posters.update_inventory', poster_id=poster.id) }}">
+                                <div class="input-group mb-2">
+                                    <input type="number" class="form-control" name="count" value="{{ poster.inventory_count }}" min="0">
+                                    <select class="form-select" name="action">
+                                        <option value="counted">Counted</option>
+                                        <option value="printed">Printed</option>
+                                        <option value="adjusted">Adjusted</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <input type="text" class="form-control" name="notes" placeholder="Notes (optional)">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary">Update Count</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if poster.tags or poster.slogans %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    {% if poster.tags %}
+                    <h6>Tags</h6>
+                    <div class="mb-3">
+                        {% for tag in poster.tags %}
+                        <span class="badge bg-info me-1">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if poster.slogans %}
+                    <h6>Slogans</h6>
+                    <ul class="mb-0">
+                        {% for slogan in poster.slogans %}
+                        <li>{{ slogan }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">System Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Created</dt>
+                        <dd class="col-sm-8">{{ poster.created_at|datetimeformat if poster.created_at else '—' }} by {{ poster.created_by or '—' }}</dd>
+                        
+                        <dt class="col-sm-4">Last Updated</dt>
+                        <dd class="col-sm-8">{{ poster.updated_at|datetimeformat if poster.updated_at else '—' }} by {{ poster.updated_by or '—' }}</dd>
+                        
+                        <dt class="col-sm-4">Processed</dt>
+                        <dd class="col-sm-8">{{ poster.processed_at|datetimeformat if poster.processed_at else 'Not processed' }}</dd>
+                        
+                        <dt class="col-sm-4">Processing Notes</dt>
+                        <dd class="col-sm-8">{{ poster.processing_notes or '—' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <img src="{{ url_for('posters.thumbnail', poster_id=poster.id) }}" 
+                         class="img-fluid rounded" 
+                         alt="{{ poster.title }}"
+                         style="max-height: 500px;">
+                    <div class="mt-3">
+                        <small class="text-muted">Thumbnail preview</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Inventory History</h5>
+                </div>
+                <div class="card-body">
+                    {% if poster.inventory_history %}
+                    <div class="list-group list-group-flush">
+                        {% for record in poster.inventory_history|sort(attribute='date', reverse=true) %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    <span class="badge bg-{{ 'success' if record.action == 'counted' else 'primary' if record.action == 'printed' else 'warning' }}">
+                                        {{ record.action|title }}
+                                    </span>
+                                    {{ record.count }}
+                                </h6>
+                                <small>{{ record.date|datetimeformat if record.date else '—' }}</small>
+                            </div>
+                            {% if record.notes %}
+                            <p class="mb-1 small">{{ record.notes }}</p>
+                            {% endif %}
+                            {% if record.user %}
+                            <small class="text-muted">By {{ record.user }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No inventory history recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Format dates in local timezone
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.datetime-format').forEach(function(el) {
+            var dateStr = el.textContent;
+            if (dateStr && dateStr !== '—') {
+                var date = new Date(dateStr);
+                if (!isNaN(date)) {
+                    el.textContent = date.toLocaleString();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

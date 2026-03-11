@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}System Information - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i class="bi bi-gear me-2"></i>
+                System Information
+            </h1>
+            <div>
+                <span class="badge bg-info">Admin Only</span>
+            </div>
+        </div>
+        
+        <p class="text-muted mb-4">
+            This page displays system configuration and status information.
+            Changes to configuration should be made through the configuration files.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-sliders me-2"></i>
+                    System Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th class="text-nowrap">System Name</th>
+                                <td>{{ config.system_name|default('Not set') }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-nowrap">Upload Limit</th>
+                                <td>{{ config.upload_limit_mb|default(200) }} MB</td>
+                            </tr>
+                            <tr>
+                                <th class="text-nowrap">FTP Export Path</th>
+                                <td><code>{{ config.ftp_export_path|default('/data/ftp_export') }}</code></td>
+                            </tr>
+                            <tr>
+                                <th class="text-nowrap">Backup Path</th>
+                                <td><code>{{ config.backup_path|default('/backups') }}</code></td>
+                            </tr>
+                            <tr>
+                                <th class="text-nowrap">Backup Retention</th>
+                                <td>{{ config.backup_retention|default(4) }} weeks</td>
+                            </tr>
+                            <tr>
+                                <th class="text-nowrap">Session Timeout</th>
+                                <td>120 minutes (default)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-hdd me-2"></i>
+                    Storage Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="card-subtitle mb-2">Directory Structure</h6>
+                    <pre class="bg-light p-3 rounded small"><code>/config/
+  system.yaml          # System configuration
+  template.yaml        # Bug template defaults
+  price_tiers.yaml     # Price tiers
+  users/               # User accounts (optional)
+
+/data/
+  kits/               # Kit definitions
+  collections/        # Collection definitions  
+  posters/            # Poster metadata (JSON)
+  originals/          # Original uploaded files
+  processed/          # Final PDFs with bugs
+  thumbnails/         # Web previews
+  labels/             # Generated labels
+  ftp_export/         # Printer-ready PDFs
+    All/              # Flat structure
+    Ordered/          # Hierarchical structure
+
+/backups/             # Weekly backup archives</code></pre>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    All configuration is stored in human-readable YAML/JSON files for easy backup and version control.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Security Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>Password Hashing</span>
+                            </div>
+                            <small class="text-muted">bcrypt</small>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>Session Security</span>
+                            </div>
+                            <small class="text-muted">HTTP-only cookies</small>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>File Upload Validation</span>
+                            </div>
+                            <small class="text-muted">200MB limit</small>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                                <span>Default Admin Password</span>
+                            </div>
+                            <small class="text-muted">Should be changed</small>
+                        </div>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>File Locking</span>
+                            </div>
+                            <small class="text-muted">Prevents concurrent writes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-tools me-2"></i>
+                    System Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Administrative actions that affect the system:
+                </p>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary text-start" disabled>
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Reload Configuration
+                        <small class="d-block text-muted">Reload all YAML configuration files</small>
+                    </button>
+                    
+                    <button class="btn btn-outline-success text-start" disabled>
+                        <i class="bi bi-archive me-2"></i>
+                        Create Manual Backup
+                        <small class="d-block text-muted">Create immediate backup ZIP archive</small>
+                    </button>
+                    
+                    <button class="btn btn-outline-warning text-start" disabled>
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Clear Cache
+                        <small class="d-block text-muted">Clear all cached configuration and thumbnails</small>
+                    </button>
+                    
+                    <button class="btn btn-outline-danger text-start" disabled>
+                        <i class="bi bi-trash me-2"></i>
+                        Clean Old Backups
+                        <small class="d-block text-muted">Remove backups beyond retention period</small>
+                    </button>
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> These actions affect system operation. Use with caution.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-text me-2"></i>
+                    Configuration Files
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    The system uses the following configuration files. All files are stored in
+                    <code>/config</code> and are automatically reloaded when changed.
+                </p>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">system.yaml</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">
+                                    Contains system settings, user accounts, and security configuration.
+                                </p>
+                                <code class="small d-block text-truncate">/config/system.yaml</code>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">template.yaml</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">
+                                    Defines bug template defaults, price tiers, and global settings.
+                                </p>
+                                <code class="small d-block text-truncate">/config/template.yaml</code>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">price_tiers.yaml</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">
+                                    Optional file for price tier configuration (falls back to template).
+                                </p>
+                                <code class="small d-block text-truncate">/config/price_tiers.yaml</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

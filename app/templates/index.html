@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-lg-6">
+        <div class="p-5">
+            <h1 class="display-4 fw-bold mb-4">
+                Poster Management System
+            </h1>
+            <p class="lead mb-4">
+                A comprehensive system for managing poster production, inventory, and printing.
+                Streamline your workflow from upload to print-ready PDFs.
+            </p>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-5">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Login to Get Started
+                </a>
+                <a href="{{ url_for('main.about') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Learn More
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="p-5">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-4">
+                    <h4 class="card-title mb-4">
+                        <i class="bi bi-stack text-primary me-2"></i>
+                        Key Features
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-upload text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Easy Upload</h5>
+                                    <p class="text-muted mb-0">Drag-and-drop poster upload with automatic processing.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-qr-code text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Smart Bug Generation</h5>
+                                    <p class="text-muted mb-0">Automatic bug pages with QR codes and metadata.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-collection text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Kit & Collection Management</h5>
+                                    <p class="text-muted mb-0">Organize posters into kits and collections.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-printer text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Print-Ready Export</h5>
+                                    <p class="text-muted mb-0">Automatically export to FTP for printing.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-tags text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Inventory Tracking</h5>
+                                    <p class="text-muted mb-0">Track counted and printed posters per collection.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-file-earmark-pdf text-primary fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Label Generation</h5>
+                                    <p class="text-muted mb-0">Automatic printable labels for kits and collections.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <h5 class="alert-heading">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Important Security Notice
+            </h5>
+            <p class="mb-0">
+                This system is intended for internal use on a secure Tailscale network.
+                Default admin credentials should be changed immediately after first login.
+                Contact your system administrator for assistance.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
