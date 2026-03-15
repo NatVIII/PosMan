@@ -52,7 +52,7 @@ A Flask-based web application for managing poster production, inventory, and dis
 
 ### 1. Clone and Setup
 ```bash
-git clone <repository-url>
+git clone https://github.com/NatVIII/PosMan
 cd poster-management-system
 ```
 
