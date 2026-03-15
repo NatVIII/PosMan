@@ -29,9 +29,16 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and configuration
 COPY app/ ./app/
 COPY scripts/ ./scripts/
+COPY .flaskenv .
+
+# Set default environment variables
+ENV FLASK_APP=app \
+    FLASK_ENV=production \
+    CONFIG_PATH=/config \
+    PYTHONUNBUFFERED=1
 
 # Create necessary directories
 RUN mkdir -p /config /data /backups \
