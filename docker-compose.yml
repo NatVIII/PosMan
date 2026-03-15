@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  PosMan:
+  posman:
     build: .
-    container_name: PosMan
+    container_name: posman
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -18,8 +18,8 @@ services:
       - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
     networks:
-      - PosMan-network
+      - posman-network
 
 networks:
-  PosMan-network:
+  posman-network:
     driver: bridge
