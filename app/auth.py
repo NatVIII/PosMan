@@ -211,7 +211,7 @@ def change_password():
         
         flash(error, 'error')
     
-    return render_template('auth/change_password.html')
+    return render_template('auth/change_password.html', user=g.user)
 
 
 # Admin user management routes

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   posman:
     build:
@@ -16,7 +14,7 @@ services:
       - ./config:/config
       - ./data:/data
       - ./backups:/backups
-      - ./app:/app:ro  # Read-only mount for development
+      - ./app:/app/app:ro  # Read-only mount for development
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app

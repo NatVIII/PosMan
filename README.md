@@ -89,6 +89,34 @@ Open your browser to: `http://localhost:5000`
 - **Viewer**: `viewer` / `password`
 - Additional users can be created in the admin interface
 
+
+## Offline Deployment and Customization
+
+The system is designed to run in completely offline environments with no external network dependencies. All web assets (Bootstrap CSS/JS, Bootstrap Icons) are included locally in the repository.
+
+### Local Assets
+- Bootstrap 5.3.0 CSS and JavaScript bundle
+- Bootstrap Icons 1.10.0 (WOFF2/WOFF fonts)
+- Customizable SVG favicon
+- Placeholder `app.js` for custom JavaScript
+
+### Updating Assets
+To update Bootstrap or Bootstrap Icons to newer versions, run:
+```bash
+./scripts/download_assets.sh
+```
+
+This script downloads the latest versions and updates templates automatically.
+
+### Custom Favicon
+Replace `app/static/favicon.svg` with your custom SVG logo. The system will automatically use it. For ICO favicon support, install ImageMagick and run the asset script again.
+
+### Verification
+Run the offline test to confirm everything works without network access:
+```bash
+./scripts/test_docker.sh
+```
+
 ## Production Deployment Considerations
 
 The default `docker-compose.yml` uses development settings. For production:
