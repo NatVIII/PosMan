@@ -2,9 +2,14 @@ version: '3.8'
 
 services:
   posman:
-    build: .
+    build:
+      context: .
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
     container_name: posman
     restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "5000:5000"
     volumes:
@@ -17,6 +22,7 @@ services:
       - FLASK_APP=app
       - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
+      - CONFIG_PATH=/config
     networks:
       - posman-network
 

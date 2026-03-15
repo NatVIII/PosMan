@@ -56,15 +56,33 @@ git clone https://github.com/NatVIII/PosMan
 cd poster-management-system
 ```
 
-### 2. Start the Application
+### 2. Setup Permissions and Configuration
+```bash
+# Run the setup script to create directories with proper permissions
+chmod +x setup.sh
+./setup.sh
+
+# If Docker Compose already created directories as root, fix permissions:
+chmod +x fix-permissions.sh
+./fix-permissions.sh
+```
+
+### 3. Build the Docker Image (required if your user ID is not 1000)
+```bash
+docker-compose build
+```
+
+> **Note:** The setup script automatically detects your user ID. If your UID is not 1000 (the default), you MUST run `docker-compose build` to rebuild the image with your user ID. This ensures proper file permissions.
+
+### 4. Start the Application
 ```bash
 docker-compose up -d
 ```
 
-### 3. Access the Application
+### 5. Access the Application
 Open your browser to: `http://localhost:5000`
 
-### 4. Login Credentials
+### 6. Login Credentials
 > **⚠️ SECURITY WARNING**: Change default passwords immediately after first login!
 
 - **Admin**: `admin` / `password` (password change required on first login)
@@ -323,10 +341,23 @@ tar -xzf backup-20250311.tar.gz
 ### Common Issues
 
 #### "Permission denied" errors with Docker
+
+Docker Compose may create directories as root when they don't exist. Fix with:
+
+**Option A: Use the fix-permissions script (recommended):**
 ```bash
-# Fix permissions on mounted volumes
-sudo chown -R 1000:1000 config data backups
+chmod +x fix-permissions.sh
+./fix-permissions.sh
 ```
+
+**Option B: Manual fix:**
+```bash
+# Replace 1000:1000 with your user's UID:GID (run `id -u` and `id -g`)
+sudo chown -R $(id -u):$(id -g) config data backups
+sudo chmod -R 755 config data backups
+```
+
+**Prevention:** Run `./setup.sh` before `docker-compose up -d` to create directories with proper ownership.
 
 #### PDF processing fails
 1. Check that poppler-utils is installed (`pdftoppm --version`)

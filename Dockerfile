@@ -1,5 +1,9 @@
 FROM python:3.11-alpine
 
+# Build arguments for user ID (default to 1000 for compatibility)
+ARG UID=1000
+ARG GID=1000
+
 # Install system dependencies
 RUN apk add --no-cache \
     gcc \
@@ -44,8 +48,13 @@ ENV FLASK_APP=app \
 RUN mkdir -p /config /data /backups \
     && chmod 755 /config /data /backups
 
-# Create non-root user
-RUN adduser -D posteruser
+# Create non-root user with specified UID/GID
+RUN addgroup -g $GID posteruser && \
+    adduser -D -u $UID -G posteruser posteruser
+
+# Set ownership of directories to the new user
+RUN chown -R $UID:$GID /config /data /backups /app
+
 USER posteruser
 
 # Expose port
