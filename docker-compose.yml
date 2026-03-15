@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  postermanagement:
+  PosMan:
     build: .
-    container_name: poster-management
+    container_name: PosMan
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -18,8 +18,8 @@ services:
       - FLASK_DEBUG=1
       - PYTHONUNBUFFERED=1
     networks:
-      - poster-network
+      - PosMan-network
 
 networks:
-  poster-network:
+  PosMan-network:
     driver: bridge
