@@ -64,6 +64,7 @@ class PosterMetadata(TypedDict):
     ratings: Dict[str, float]
     slogans: List[str]
     seller: str
+    preview_settings: Optional[Dict[str, Any]]
     
     # System metadata
     created_at: str
@@ -215,7 +216,7 @@ class PosterManager:
             'length': metadata.get('length', ''),
             'orientation': 'portrait',  # Will be updated after processing
             'dimensions': {'width': 0, 'height': 0},
-            'price': float(metadata.get('price', self.config.get('default_price', 12.00))),
+            'price': float(metadata.get('price') or self.config.get('default_price', 12.00)),
             'price_tier': metadata.get('price_tier', 'standard'),
             'inventory_count': 0,
             'inventory_history': [],
@@ -229,6 +230,7 @@ class PosterManager:
             'tags': metadata.get('tags', []),
             'ratings': {},
             'slogans': metadata.get('slogans', []),
+            'preview_settings': metadata.get('preview_settings', {}),
             'seller': metadata.get('seller', self.config.get('seller', '')),
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat(),

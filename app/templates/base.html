@@ -44,8 +44,8 @@
                                 <i class="bi bi-upload me-1"></i> Upload
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Single Poster</a></li>
-                                <li><a class="dropdown-item" href="#">Batch Upload</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('posters.upload') }}">Single Poster</a></li>
+                                <li><a class="dropdown-item" href="#" class="disabled text-muted" aria-disabled="true">Batch Upload (Coming Soon)</a></li>
                             </ul>
                         </li>
                         
@@ -54,12 +54,12 @@
                                 <i class="bi bi-collection me-1"></i> Manage
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Posters</a></li>
-                                <li><a class="dropdown-item" href="#">Collections</a></li>
-                                <li><a class="dropdown-item" href="#">Kits</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('posters.index') }}">Posters</a></li>
+                                <li><a class="dropdown-item disabled text-muted" href="#" aria-disabled="true">Collections (Coming Soon)</a></li>
+                                <li><a class="dropdown-item disabled text-muted" href="#" aria-disabled="true">Kits (Coming Soon)</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#">Inventory</a></li>
-                                <li><a class="dropdown-item" href="#">Labels</a></li>
+                                <li><a class="dropdown-item disabled text-muted" href="#" aria-disabled="true">Inventory (Coming Soon)</a></li>
+                                <li><a class="dropdown-item disabled text-muted" href="#" aria-disabled="true">Labels (Coming Soon)</a></li>
                             </ul>
                         </li>
                          {% endif %}
@@ -73,6 +73,17 @@
                                 <li><a class="dropdown-item" href="{{ url_for('auth.user_list') }}">
                                     <i class="bi bi-people me-2"></i> User Management
                                 </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.taxonomy_list') }}">
+                                    <i class="bi bi-tags me-2"></i> Taxonomy Management
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.bleed_template_edit') }}">
+                                    <i class="bi bi-bounding-box me-2"></i> Bleed Template
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.id_templates_edit') }}">
+                                    <i class="bi bi-card-text me-2"></i> ID Templates
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('main.system_info') }}">
                                     <i class="bi bi-gear me-2"></i> System Info
                                 </a></li>
@@ -108,7 +119,7 @@
                                 <li><a class="dropdown-item" href="{{ url_for('main.system_info') }}">
                                     <i class="bi bi-gear me-1"></i> System Info
                                 </a></li>
-                                <li><a class="dropdown-item" href="#">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.user_list') }}">
                                     <i class="bi bi-people me-1"></i> User Management
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>

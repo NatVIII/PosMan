@@ -27,14 +27,24 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="source" class="form-label">Source</label>
-                                    <input type="text" class="form-control" id="source" name="source" value="{{ poster.source or '' }}">
+                                    <label for="source" class="form-label">Source *</label>
+                                    <select class="form-control" id="source" name="source" required>
+                                        <option value="">Select a source</option>
+                                        {% for source in sources %}
+                                        <option value="{{ source.id }}" {% if poster.source == source.id %}selected{% endif %}>{{ source.name }} ({{ source.code }})</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="categories" class="form-label">Categories</label>
-                                    <input type="text" class="form-control" id="categories" name="categories" value="{{ poster.categories or '' }}">
+                                    <label for="categories" class="form-label">Category *</label>
+                                    <select class="form-control" id="categories" name="categories" required>
+                                        <option value="">Select a category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}" {% if poster.categories == category.id %}selected{% endif %}>{{ category.name }} ({{ category.code }})</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                         </div>

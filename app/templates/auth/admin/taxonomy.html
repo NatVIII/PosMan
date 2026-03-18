@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Taxonomy Management - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">
+            <i class="bi bi-tags me-2"></i>
+            Taxonomy Management
+        </h1>
+        <div class="btn-group">
+            <a href="{{ url_for('auth.taxonomy_settings') }}" class="btn btn-outline-primary">
+                <i class="bi bi-gear me-1"></i>
+                Settings
+            </a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Sources</h5>
+                    <a href="{{ url_for('auth.source_add') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add Source
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if sources %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>ID</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for source in sources %}
+                                <tr>
+                                    <td>{{ source.name }}</td>
+                                    <td><code>{{ source.code }}</code></td>
+                                    <td><small class="text-muted">{{ source.id }}</small></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('auth.source_edit', source_id=source.id) }}" class="btn btn-outline-primary">Edit</a>
+                                            <form method="post" action="{{ url_for('auth.source_delete', source_id=source.id) }}" style="display: inline;" onsubmit="return confirm('Delete source \"{{ source.name }}\"? This cannot be undone.');">
+                                                <button type="submit" class="btn btn-outline-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No sources defined. Add your first source.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Categories</h5>
+                    <a href="{{ url_for('auth.category_add') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add Category
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if categories %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>ID</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                <tr>
+                                    <td>{{ category.name }}</td>
+                                    <td><code>{{ category.code }}</code></td>
+                                    <td><small class="text-muted">{{ category.id }}</small></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('auth.category_edit', category_id=category.id) }}" class="btn btn-outline-primary">Edit</a>
+                                            <form method="post" action="{{ url_for('auth.category_delete', category_id=category.id) }}" style="display: inline;" onsubmit="return confirm('Delete category \"{{ category.name }}\"? This cannot be undone.');">
+                                                <button type="submit" class="btn btn-outline-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No categories defined. Add your first category.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Note:</strong> At least one source and one category must be defined before posters can be uploaded.
+        Changes to codes will affect future poster IDs but not existing ones.
+    </div>
+</div>
+{% endblock %}

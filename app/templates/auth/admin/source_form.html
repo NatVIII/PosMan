@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == 'add' %}Add Source{% else %}Edit Source{% endif %} - {{ super() }}
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="bi bi-{% if action == 'add' %}plus-circle{% else %}pencil{% endif %} me-2"></i>
+            {% if action == 'add' %}Add New Source{% else %}Edit Source{% endif %}
+        </h1>
+        <p class="text-muted">
+            {% if action == 'add' %}
+            Create a new source for posters (e.g., "Party for Socialism and Liberation").
+            {% else %}
+            Modify source details.
+            {% endif %}
+        </p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('auth.taxonomy_list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Taxonomy
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">Name *</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       value="{{ source.name if source else '' }}" required>
+                <div class="form-text">Descriptive name of the source (e.g., "Party for Socialism and Liberation").</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="code" class="form-label">Code *</label>
+                <input type="text" class="form-control" id="code" name="code" 
+                       value="{{ source.code if source else '' }}" required
+                        pattern="[A-Z0-9]{{ '{' }}{{ source_length }}{{ '}' }}" maxlength="{{ source_length }}" minlength="{{ source_length }}"
+                        style="font-family: monospace; text-transform: uppercase;">
+                <div class="form-text">
+                    Exactly {{ source_length }} uppercase letter(s) or number(s) (e.g., {% if source_length == 1 %}"P"{% else %}"PS"{% endif %}). This code will be used in poster IDs.
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Note:</strong> The code must be unique across all sources. Changing the code will affect future poster IDs but not existing ones.
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('auth.taxonomy_list') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if action == 'add' %}Create Source{% else %}Update Source{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

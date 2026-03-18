@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Bleed Template Configuration - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">
+                <i class="bi bi-bounding-box me-2"></i>
+                Bleed Template Configuration
+            </h1>
+            <p class="text-muted">
+                Configure the master bleed template used for all poster processing.
+            </p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="paper_width" class="form-label">Paper Width (inches) *</label>
+                            <input type="number" class="form-control" id="paper_width" name="paper_width" 
+                                   step="0.01" min="0.1" value="{{ paper_width }}" required>
+                            <div class="form-text">Width of the paper sheet (e.g., 12.0).</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="paper_height" class="form-label">Paper Height (inches) *</label>
+                            <input type="number" class="form-control" id="paper_height" name="paper_height" 
+                                   step="0.01" min="0.1" value="{{ paper_height }}" required>
+                            <div class="form-text">Height of the paper sheet (e.g., 18.0).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="trim_top" class="form-label">Top Trim Line (inches) *</label>
+                            <input type="number" class="form-control" id="trim_top" name="trim_top" 
+                                   step="0.001" min="0" value="{{ trim_top }}" required>
+                            <div class="form-text">Distance from top edge to top trim line (e.g., 0.5).</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="trim_bottom" class="form-label">Bottom Trim Line (inches) *</label>
+                            <input type="number" class="form-control" id="trim_bottom" name="trim_bottom" 
+                                   step="0.001" min="0" value="{{ trim_bottom }}" required>
+                            <div class="form-text">Distance from bottom edge to bottom trim line (e.g., 0.5).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="trim_left" class="form-label">Left Trim Line (inches) *</label>
+                            <input type="number" class="form-control" id="trim_left" name="trim_left" 
+                                   step="0.001" min="0" value="{{ trim_left }}" required>
+                            <div class="form-text">Distance from left edge to left trim line (e.g., 0.5).</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="trim_right" class="form-label">Right Trim Line (inches) *</label>
+                            <input type="number" class="form-control" id="trim_right" name="trim_right" 
+                                   step="0.001" min="0" value="{{ trim_right }}" required>
+                            <div class="form-text">Distance from right edge to right trim line (e.g., 0.5).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden legacy fields for backward compatibility -->
+                <input type="hidden" id="bleed_margin" name="bleed_margin" value="0.125">
+                <input type="hidden" id="safe_margin" name="safe_margin" value="0.25">
+
+                <div class="mb-3">
+                    <label for="standard_lengths" class="form-label">Standard Lengths (inches)</label>
+                    <input type="text" class="form-control" id="standard_lengths" name="standard_lengths" 
+                           value="{{ standard_lengths }}">
+                    <div class="form-text">
+                        Comma‑separated list of standard poster lengths for snapping (e.g., "13.75, 16.9, 19.0").
+                        Leave empty to disable length snapping.
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> The bleed template must be configured before any posters can be uploaded.
+                    Changes will affect all future poster processing.
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Current Configuration</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Paper Size</dt>
+                <dd class="col-sm-8">{{ paper_width }} × {{ paper_height }} inches</dd>
+                
+                <dt class="col-sm-4">Top Trim Line</dt>
+                <dd class="col-sm-8">{{ trim_top }} inches</dd>
+                
+                <dt class="col-sm-4">Bottom Trim Line</dt>
+                <dd class="col-sm-8">{{ trim_bottom }} inches</dd>
+                
+                <dt class="col-sm-4">Left Trim Line</dt>
+                <dd class="col-sm-8">{{ trim_left }} inches</dd>
+                
+                <dt class="col-sm-4">Right Trim Line</dt>
+                <dd class="col-sm-8">{{ trim_right }} inches</dd>
+                
+                <dt class="col-sm-4">Standard Lengths</dt>
+                <dd class="col-sm-8">
+                    {% if standard_lengths %}
+                    {{ standard_lengths }}
+                    {% else %}
+                    <span class="text-muted">None configured</span>
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

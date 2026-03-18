@@ -4,6 +4,7 @@ Poster management routes.
 Handles upload, listing, viewing, editing, and deleting posters.
 """
 
+import io
 import logging
 import os
 from datetime import datetime
@@ -14,11 +15,14 @@ from flask import (
     Blueprint, render_template, request, redirect, url_for, 
     flash, current_app, send_file, abort, jsonify, g
 )
+from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from .auth import login_required, admin_required
+from .auth import login_required, admin_required, upload_allowed
 from .poster import PosterManager
 from .pdf_processor import PDFProcessor
+from .config import config_loader
+from .id_generator import id_generator
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +41,64 @@ def get_pdf_processor():
     """Get PDF processor instance."""
     return PDFProcessor()
 
-def allowed_file(filename: str) -> bool:
+def get_taxonomy_data():
+    """Get taxonomy data for templates."""
+    taxonomy = config_loader.load_taxonomy_config()
+    return {
+        'sources': taxonomy.get('sources', []),
+        'categories': taxonomy.get('categories', []),
+    }
+
+def get_bleed_config():
+    """Get bleed template configuration for templates."""
+    bleed_config = config_loader.load_bleed_template_config()
+    result = bleed_config.get('bleed_template', {})
+    print(f"\n=== GET_BLEED_CONFIG DEBUG ===")
+    print(f"Loaded bleed_config: {bleed_config}")
+    print(f"Result (bleed_template key): {result}")
+    print(f"Trim values in result: top={result.get('trim_top')}, bottom={result.get('trim_bottom')}, left={result.get('trim_left')}, right={result.get('trim_right')}")
+    print(f"==============================\n")
+    return result
+
+def get_taxonomy_mappings():
+    """Get taxonomy mappings for ID lookup."""
+    taxonomy = config_loader.load_taxonomy_config()
+    sources = {s['id']: s for s in taxonomy.get('sources', [])}
+    categories = {c['id']: c for c in taxonomy.get('categories', [])}
+    return sources, categories
+
+def enrich_poster_with_taxonomy(poster):
+    """Add display names to poster data using taxonomy mappings."""
+    sources_map, categories_map = get_taxonomy_mappings()
+    
+    # Add source display name
+    source_id = poster.get('source', '')
+    if source_id in sources_map:
+        poster['source_display'] = sources_map[source_id]['name']
+    else:
+        # Fallback to ID (or original free text)
+        poster['source_display'] = source_id
+    
+    # Add category display name
+    category_id = poster.get('categories', '')
+    if category_id in categories_map:
+        poster['categories_display'] = categories_map[category_id]['name']
+    else:
+        poster['categories_display'] = category_id
+    
+    return poster
+
+
+def convert_image_to_pdf(image_file):
+    """Convert uploaded image file to PDF bytes using PDFProcessor."""
+    pdf_processor = PDFProcessor()
+    return pdf_processor.convert_image_to_pdf(image_file)
+
+def allowed_file(filename: Optional[str]) -> bool:
     """Check if file extension is allowed."""
-    allowed_extensions = {'pdf'}
+    if not filename:
+        return False
+    allowed_extensions = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'}
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
@@ -56,7 +115,7 @@ def index():
     for pid in poster_ids:
         poster = poster_manager.storage.load(pid)
         if poster:
-            posters.append(poster)
+            posters.append(enrich_poster_with_taxonomy(poster))
     
     # Sort by creation date (newest first)
     posters.sort(key=lambda x: x.get('created_at', ''), reverse=True)
@@ -68,6 +127,7 @@ def index():
 
 @bp.route('/upload', methods=['GET', 'POST'])
 @login_required
+@upload_allowed
 def upload():
     """Upload new poster PDF."""
     if request.method == 'POST':
@@ -79,26 +139,84 @@ def upload():
         pdf_file = request.files['pdf_file']
         
         # If user does not select file, browser submits empty file without filename
-        if pdf_file.filename == '':
+        if not pdf_file.filename or pdf_file.filename == '':
             flash('No selected file', 'error')
             return redirect(request.url)
         
         if not allowed_file(pdf_file.filename):
-            flash('Only PDF files are allowed', 'error')
+            flash('Only PDF and image files are allowed (PDF, JPG, PNG, GIF, BMP, TIFF)', 'error')
             return redirect(request.url)
         
-        # Get metadata from form
+        # Convert image to PDF if needed
+        original_filename = pdf_file.filename.lower()
+        if not original_filename.endswith('.pdf'):
+            try:
+                # Convert image to PDF bytes
+                pdf_bytes = convert_image_to_pdf(pdf_file)
+                # Create a new FileStorage object with PDF content
+                pdf_file = FileStorage(
+                    stream=pdf_bytes,
+                    filename=original_filename.rsplit('.', 1)[0] + '.pdf',
+                    content_type='application/pdf'
+                )
+                logger.info(f"Converted image {original_filename} to PDF")
+            except Exception as e:
+                logger.error(f"Failed to convert image to PDF: {e}")
+                flash(f'Failed to convert image to PDF: {str(e)}', 'error')
+                return redirect(request.url)
+        
+        # Get taxonomy mappings
+        sources_map, categories_map = get_taxonomy_mappings()
+        
+        # Get selected IDs from form
+        source_id = request.form.get('source', '').strip()
+        category_id = request.form.get('categories', '').strip()
+        
+        # Validate selected IDs exist in taxonomy
+        if not source_id or source_id not in sources_map:
+            flash('Invalid source selected', 'error')
+            return redirect(request.url)
+        if not category_id or category_id not in categories_map:
+            flash('Invalid category selected', 'error')
+            return redirect(request.url)
+        
+        # Get codes for ID generation
+        source_code = sources_map[source_id]['code']
+        category_code = categories_map[category_id]['code']
+        
+        # Generate poster ID using template
+        try:
+            context = {
+                'source_code': source_code,
+                'category_code': category_code,
+            }
+            poster_id = id_generator.generate_id(context)
+        except Exception as e:
+            logger.error(f"Failed to generate ID: {e}")
+            flash('Failed to generate poster ID', 'error')
+            return redirect(request.url)
+        
+        # Build metadata with taxonomy IDs
         metadata = {
+            'id': poster_id,  # Pass generated ID
             'title': request.form.get('title', '').strip(),
-            'source': request.form.get('source', '').strip(),
-            'categories': request.form.get('categories', '').strip(),
+            'source': source_id,  # Store ID, not free text
+            'categories': category_id,  # Store ID, not free text
             'attribution': request.form.get('attribution', '').strip(),
             'length': request.form.get('length', '').strip(),
-            'price': request.form.get('price', ''),
+            'price': request.form.get('price', ''),  # Will be handled by poster.py with default
             'kit': request.form.get('kit', '').strip(),
             'collection': request.form.get('collection', '').strip(),
             'tags': [t.strip() for t in request.form.get('tags', '').split(',') if t.strip()],
             'slogans': [s.strip() for s in request.form.get('slogans', '').split(',') if s.strip()],
+            'preview_settings': {
+                'alignment': request.form.get('preview_alignment', 'middle'),
+                'length_snap': request.form.get('preview_length_snap', ''),
+                'orientation': request.form.get('preview_orientation', 'auto'),
+                'rotation': int(request.form.get('preview_rotation', 0)),
+                'fill_color': request.form.get('preview_fill_color', '#ffffff'),
+                'page_number': int(request.form.get('preview_page_number', 1)),
+            },
         }
         
         # Validate required fields
@@ -108,7 +226,7 @@ def upload():
         
         # Create poster from upload
         poster_manager = get_poster_manager()
-        poster = poster_manager.create_from_upload(pdf_file, metadata, g.user['username'])
+        poster = poster_manager.create_from_upload(pdf_file, metadata, g.user.username)
         
         if not poster:
             flash('Failed to create poster', 'error')
@@ -122,6 +240,10 @@ def upload():
             original_path = Path(poster_manager.data_path) / poster['original_pdf_path']
             processed_path = Path(poster_manager.data_path) / 'processed' / f"{poster['id']}.pdf"
             
+            # Map taxonomy IDs to names for bug display
+            source_name = sources_map.get(poster['source'], {}).get('name', poster['source'])
+            category_name = categories_map.get(poster['categories'], {}).get('name', poster['categories'])
+            
             # Process poster
             result = pdf_processor.process_poster(
                 original_path,
@@ -129,13 +251,14 @@ def upload():
                 poster['id'],
                 {
                     'title': poster['title'],
-                    'source': poster['source'],
-                    'categories': poster['categories'],
+                    'source': source_name,
+                    'categories': category_name,
                     'length': poster['length'],
                     'attribution': poster['attribution'],
                     'price': poster['price'],
                     'seller': poster['seller'],
                     'slogans': poster['slogans'],
+                    'preview_settings': poster.get('preview_settings', {}),
                 }
             )
             
@@ -166,7 +289,13 @@ def upload():
             poster_manager.storage.save(poster)
             return redirect(url_for('posters.view', poster_id=poster['id']))
     
-    return render_template('posters/upload.html', user=g.user)
+    taxonomy_data = get_taxonomy_data()
+    bleed_config = get_bleed_config()
+    return render_template('posters/upload.html', 
+                         user=g.user,
+                         sources=taxonomy_data['sources'],
+                         categories=taxonomy_data['categories'],
+                         bleed_config=bleed_config)
 
 
 @bp.route('/<poster_id>')
@@ -178,6 +307,8 @@ def view(poster_id: str):
     
     if not poster:
         abort(404, description=f"Poster {poster_id} not found")
+    
+    poster = enrich_poster_with_taxonomy(poster)
     
     return render_template('posters/view.html', 
                          poster=poster,
@@ -195,10 +326,25 @@ def edit(poster_id: str):
         abort(404, description=f"Poster {poster_id} not found")
     
     if request.method == 'POST':
+        # Get taxonomy mappings for validation
+        sources_map, categories_map = get_taxonomy_mappings()
+        
+        # Get form data
+        new_source = request.form.get('source', '').strip()
+        new_category = request.form.get('categories', '').strip()
+        
+        # Validate source and category IDs exist in taxonomy
+        if new_source and new_source not in sources_map:
+            flash('Invalid source selected', 'error')
+            return redirect(request.url)
+        if new_category and new_category not in categories_map:
+            flash('Invalid category selected', 'error')
+            return redirect(request.url)
+        
         # Update metadata from form
         poster['title'] = request.form.get('title', poster['title']).strip()
-        poster['source'] = request.form.get('source', poster['source']).strip()
-        poster['categories'] = request.form.get('categories', poster['categories']).strip()
+        poster['source'] = new_source
+        poster['categories'] = new_category
         poster['attribution'] = request.form.get('attribution', poster['attribution']).strip()
         poster['length'] = request.form.get('length', poster['length']).strip()
         poster['price'] = float(request.form.get('price', poster['price']))
@@ -207,14 +353,19 @@ def edit(poster_id: str):
         poster['tags'] = [t.strip() for t in request.form.get('tags', '').split(',') if t.strip()]
         poster['slogans'] = [s.strip() for s in request.form.get('slogans', '').split(',') if s.strip()]
         poster['updated_at'] = datetime.now().isoformat()
-        poster['updated_by'] = g.user['username']
+        poster['updated_by'] = g.user.username
         
         poster_manager.storage.save(poster)
         flash(f'Poster "{poster["title"]}" updated successfully!', 'success')
         return redirect(url_for('posters.view', poster_id=poster_id))
     
+    poster = enrich_poster_with_taxonomy(poster)
+    taxonomy_data = get_taxonomy_data()
+    
     return render_template('posters/edit.html', 
                          poster=poster,
+                         sources=taxonomy_data['sources'],
+                         categories=taxonomy_data['categories'],
                          user=g.user)
 
 
@@ -304,7 +455,7 @@ def update_inventory(poster_id: str):
         
         poster_manager = get_poster_manager()
         success = poster_manager.update_inventory(
-            poster_id, count, action, notes, g.user['username']
+            poster_id, count, action, notes, g.user.username
         )
         
         if success:

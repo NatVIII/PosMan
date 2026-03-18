@@ -31,12 +31,12 @@
                     <h5 class="card-title">{{ poster.title }}</h5>
                     <p class="card-text">
                         <small class="text-muted">ID: {{ poster.id }}</small><br>
-                        {% if poster.source %}
-                        <small>Source: {{ poster.source }}</small><br>
-                        {% endif %}
-                        {% if poster.categories %}
-                        <small>Categories: {{ poster.categories }}</small><br>
-                        {% endif %}
+                         {% if poster.source_display %}
+                         <small>Source: {{ poster.source_display }}</small><br>
+                         {% endif %}
+                         {% if poster.categories_display %}
+                         <small>Category: {{ poster.categories_display }}</small><br>
+                         {% endif %}
                         <small>Inventory: <span class="badge {% if poster.inventory_count > 0 %}bg-success{% else %}bg-warning{% endif %}">{{ poster.inventory_count }}</span></small>
                     </p>
                 </div>

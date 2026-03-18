@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}ID Template Configuration - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">
+                <i class="bi bi-hash me-2"></i>
+                ID Template Configuration
+            </h1>
+            <p class="text-muted">
+                Configure the template used to generate poster IDs.
+            </p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="mb-3">
+                    <label for="pattern" class="form-label">Pattern *</label>
+                    <input type="text" class="form-control" id="pattern" name="pattern" 
+                           value="{{ pattern }}" required style="font-family: monospace;">
+                    <div class="form-text">
+                        Use template variables like <code>{{ "{{source_code}}" }}</code>, <code>{{ "{{category_code}}" }}</code>, and <code>{{ "{{seq}}" }}</code>.
+                        Format specifiers are allowed: <code>{{ "{{seq:04d}}" }}</code> for zero‑padded 4‑digit sequence.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="description" name="description" 
+                           value="{{ description }}">
+                    <div class="form-text">Optional description of this template (e.g., "Default poster ID format").</div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Variable reference:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><code>{{ "{{source_code}}" }}</code> – Source code (configurable length)</li>
+                        <li><code>{{ "{{category_code}}" }}</code> – Category code (configurable length)</li>
+                        <li><code>{{ "{{seq}}" }}</code> – Sequential number (incremented automatically)</li>
+                        <li><code>{{ "{{seq:04d}}" }}</code> – Zero‑padded 4‑digit sequence</li>
+                        <li><code>{{ "{{year}}" }}</code> – 4‑digit year</li>
+                        <li><code>{{ "{{month:02d}}" }}</code> – 2‑digit month</li>
+                        <li><code>{{ "{{day:02d}}" }}</code> – 2‑digit day</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> The ID template must be configured before any posters can be uploaded.
+                    Changing the pattern will affect future poster IDs but not existing ones.
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Template</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Current Template</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Pattern</dt>
+                <dd class="col-sm-9"><code>{{ pattern }}</code></dd>
+                
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">
+                    {% if description %}
+                        {{ description }}
+                    {% else %}
+                        <span class="text-muted">None</span>
+                    {% endif %}
+                </dd>
+                
+                <dt class="col-sm-3">Example ID</dt>
+                <dd class="col-sm-9">
+                    {% if pattern %}
+                    <code>{{ pattern.replace("{{source_code}}", "P").replace("{{category_code}}", "S").replace("{{seq:04d}}", "0001").replace("{{seq}}", "1") }}</code>
+                    {% else %}
+                    <span class="text-muted">No pattern defined</span>
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

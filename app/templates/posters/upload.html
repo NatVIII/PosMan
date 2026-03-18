@@ -2,19 +2,99 @@
 
 {% block title %}Upload Poster - {{ super() }}{% endblock %}
 
+{% block head %}
+{{ super() }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <h1>Upload Poster</h1>
     
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Bleed Preview & Alignment</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="preview-container border rounded bg-light" style="position: relative; height: 400px; overflow: auto;">
+                        <canvas id="pdf-canvas" style="display: block;"></canvas>
+                        <canvas id="overlay-canvas" style="position: absolute; top: 0; left: 0;"></canvas>
+                    </div>
+                    <div class="mt-2">
+                        <label class="form-label">Page Selection</label>
+                        <select class="form-select form-select-sm" id="page-select" style="max-width: 200px;">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Alignment</label>
+                        <select class="form-select" id="alignment">
+                            <option value="top">Top</option>
+                            <option value="middle" selected>Middle</option>
+                            <option value="bottom">Bottom</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Length Snapping (inches)</label>
+                        <select class="form-select" id="length-snap">
+                            <option value="">No snapping</option>
+                            <option value="11">11"</option>
+                            <option value="13.75">13.75"</option>
+                            <option value="17">17"</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Orientation</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="orientation" id="orientation-auto" value="auto" checked>
+                            <label class="form-check-label" for="orientation-auto">Auto-detect</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="orientation" id="orientation-portrait" value="portrait">
+                            <label class="form-check-label" for="orientation-portrait">Portrait</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rotate</label>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="rotate-ccw" title="Rotate 90° counter-clockwise">
+                                <i class="bi bi-arrow-counterclockwise"></i> 90° CCW
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="rotate-cw" title="Rotate 90° clockwise">
+                                90° CW <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fill Color</label>
+                        <input type="color" class="form-control form-control-color" id="fill-color" value="#ffffff" title="Choose fill color for empty areas">
+                    </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="reset-preview">Reset Preview</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="pdf_file" class="form-label">PDF File *</label>
-                            <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf" required>
-                            <div class="form-text">Upload the poster PDF file (max 200MB).</div>
+                     <form method="post" enctype="multipart/form-data">
+                         <input type="hidden" id="preview_alignment" name="preview_alignment" value="middle">
+                         <input type="hidden" id="preview_length_snap" name="preview_length_snap" value="">
+                          <input type="hidden" id="preview_orientation" name="preview_orientation" value="auto">
+                          <input type="hidden" id="preview_rotation" name="preview_rotation" value="0">
+                          <input type="hidden" id="preview_fill_color" name="preview_fill_color" value="#ffffff">
+                         <input type="hidden" id="preview_page_number" name="preview_page_number" value="1">
+                         <div class="mb-3">
+                             <label for="pdf_file" class="form-label">Poster File (PDF or Image) *</label>
+                             <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff" required>
+                             <div class="form-text">Upload the poster PDF or image file (max 200MB). Images will be converted to PDF.</div>
                         </div>
                         
                         <div class="mb-3">
@@ -26,36 +106,31 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="source" class="form-label">Source</label>
-                                    <input type="text" class="form-control" id="source" name="source">
-                                    <div class="form-text">e.g., National, Local, Chapter</div>
+                                    <label for="source" class="form-label">Source *</label>
+                                    <select class="form-control" id="source" name="source" required>
+                                        <option value="">Select a source</option>
+                                        {% for source in sources %}
+                                        <option value="{{ source.id }}">{{ source.name }} ({{ source.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Select from available sources</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="categories" class="form-label">Categories</label>
-                                    <input type="text" class="form-control" id="categories" name="categories">
-                                    <div class="form-text">e.g., Anti-War, Labor, Palestine</div>
+                                    <label for="categories" class="form-label">Category *</label>
+                                    <select class="form-control" id="categories" name="categories" required>
+                                        <option value="">Select a category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }} ({{ category.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Select from available categories</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="length" class="form-label">Length (11x17)</label>
-                                    <input type="text" class="form-control" id="length" name="length">
-                                    <div class="form-text">e.g., 13.75"</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="price" class="form-label">Price ($)</label>
-                                    <input type="number" class="form-control" id="price" name="price" step="0.01" value="12.00">
-                                    <div class="form-text">Default: $12.00</div>
-                                </div>
-                            </div>
-                        </div>
+
                         
                         <div class="mb-3">
                             <label for="attribution" class="form-label">Attribution</label>
@@ -67,14 +142,14 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="kit" class="form-label">Kit</label>
-                                    <input type="text" class="form-control" id="kit" name="kit">
+                                    <input type="text" class="form-control" id="kit" name="kit" list="kit-options">
                                     <div class="form-text">e.g., Smalls, Large, Premium</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="collection" class="form-label">Collection</label>
-                                    <input type="text" class="form-control" id="collection" name="collection">
+                                    <input type="text" class="form-control" id="collection" name="collection" list="collection-options">
                                     <div class="form-text">e.g., Jaffa, Harlem, Palisades</div>
                                 </div>
                             </div>
@@ -86,11 +161,7 @@
                             <div class="form-text">Comma-separated tags for search.</div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="slogans" class="form-label">Slogans</label>
-                            <input type="text" class="form-control" id="slogans" name="slogans" value="@pslvirginia, Dare to struggle, dare to win">
-                            <div class="form-text">Comma-separated slogans for bug page.</div>
-                        </div>
+
                         
                         <div class="alert alert-info">
                             <h6><i class="bi bi-info-circle"></i> Processing Information</h6>
@@ -99,7 +170,7 @@
                                 <ul class="mb-0">
                                     <li>Add a bug page with QR code and metadata</li>
                                     <li>Generate a thumbnail preview</li>
-                                    <li>Rotate landscape posters if needed</li>
+                                    <li>Scale posters to fit within trim lines</li>
                                     <li>Save to the processed posters directory</li>
                                 </ul>
                             </p>
@@ -109,6 +180,18 @@
                             <a href="{{ url_for('posters.index') }}" class="btn btn-outline-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">Upload & Process</button>
                         </div>
+                        <datalist id="kit-options">
+                            <option value="Smalls">
+                            <option value="Large">
+                            <option value="Premium">
+                            <option value="Standard">
+                        </datalist>
+                        <datalist id="collection-options">
+                            <option value="Jaffa">
+                            <option value="Harlem">
+                            <option value="Palisades">
+                            <option value="Classic">
+                        </datalist>
                     </form>
                 </div>
             </div>
@@ -122,7 +205,7 @@
                 <div class="card-body">
                     <h6>File Requirements</h6>
                     <ul>
-                        <li>PDF format only</li>
+                         <li>PDF or image format (PDF, JPG, PNG, GIF, BMP, TIFF)</li>
                         <li>Max file size: 200MB</li>
                         <li>12x18" with bleed for C368 printing</li>
                         <li>High resolution (300 DPI recommended)</li>
@@ -132,7 +215,7 @@
                     <ul>
                         <li>Bug page added automatically</li>
                         <li>Thumbnail generated from first page</li>
-                        <li>Landscape posters rotated 90°</li>
+                         <li>Posters scaled to fit within trim lines</li>
                         <li>Files stored in organized directories</li>
                     </ul>
                     
@@ -148,4 +231,10 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+    const bleedConfig = {{ bleed_config|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/upload_preview.js') }}"></script>
 {% endblock %}

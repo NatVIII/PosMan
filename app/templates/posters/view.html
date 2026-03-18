@@ -47,10 +47,10 @@
                         <div class="card-body">
                             <dl class="row mb-0">
                                 <dt class="col-sm-4">Source</dt>
-                                <dd class="col-sm-8">{{ poster.source or '—' }}</dd>
+                                <dd class="col-sm-8">{{ poster.source_display or poster.source or '—' }}</dd>
                                 
-                                <dt class="col-sm-4">Categories</dt>
-                                <dd class="col-sm-8">{{ poster.categories or '—' }}</dd>
+                                <dt class="col-sm-4">Category</dt>
+                                <dd class="col-sm-8">{{ poster.categories_display or poster.categories or '—' }}</dd>
                                 
                                 <dt class="col-sm-4">Attribution</dt>
                                 <dd class="col-sm-8">{{ poster.attribution or '—' }}</dd>

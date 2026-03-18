@@ -14,12 +14,14 @@ from pathlib import Path
 from typing import Tuple, Optional, Dict, Any, List
 
 import qrcode
+from qrcode import constants
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import portrait
 from reportlab.lib.utils import ImageReader
+from pdf2image import convert_from_path, convert_from_bytes
 
 from .config import config_loader
 
@@ -56,9 +58,52 @@ class PDFProcessor:
         # Font cache
         self._font_cache = {}
         
-        # Page size (12x18 inches in points: 864 x 1296)
-        self.PAGE_W_PT = 864
-        self.PAGE_H_PT = 1296
+        # Load bleed configuration
+        try:
+            bleed_config = config_loader.load_bleed_template_config()
+            self.bleed_config = bleed_config.get('bleed_template', {})
+            logger.info(f"Loaded bleed config: {self.bleed_config}")
+            # Debug print to console as well
+            print(f"\n=== PDF PROCESSOR CONFIG LOADING ===")
+            print(f"Bleed config dict: {self.bleed_config}")
+            print(f"Trim values: top={self.bleed_config.get('trim_top')}, "
+                  f"bottom={self.bleed_config.get('trim_bottom')}, "
+                  f"left={self.bleed_config.get('trim_left')}, "
+                  f"right={self.bleed_config.get('trim_right')}")
+            print(f"=====================================\n")
+        except Exception as e:
+            logger.warning(f"Failed to load bleed config: {e}")
+            self.bleed_config = {}
+        
+        # Page size from bleed config or default (12x18 inches in points: 864 x 1296)
+        paper_width_in = self.bleed_config.get('paper_width', 12.0)
+        paper_height_in = self.bleed_config.get('paper_height', 18.0)
+        self.PAGE_W_PT = int(paper_width_in * 72)  # 72 points per inch
+        self.PAGE_H_PT = int(paper_height_in * 72)
+        print(f"Paper size: {paper_width_in}x{paper_height_in} in = {self.PAGE_W_PT}x{self.PAGE_H_PT} pts")
+        
+        # Bleed and safe margins (legacy)
+        self.bleed_margin_in = self.bleed_config.get('bleed_margin', 0.125)
+        self.safe_margin_in = self.bleed_config.get('safe_margin', 0.25)
+        self.standard_lengths = self.bleed_config.get('standard_lengths', [11.0, 13.75, 17.0])
+        
+        # Trim lines (new, preferred over safe_margin)
+        self.trim_top_in = self.bleed_config.get('trim_top', self.safe_margin_in)
+        self.trim_bottom_in = self.bleed_config.get('trim_bottom', self.safe_margin_in)
+        self.trim_left_in = self.bleed_config.get('trim_left', self.safe_margin_in)
+        self.trim_right_in = self.bleed_config.get('trim_right', self.safe_margin_in)
+        
+        # Convert to points
+        self.bleed_margin_pt = int(self.bleed_margin_in * 72)
+        self.safe_margin_pt = int(self.safe_margin_in * 72)
+        self.trim_top_pt = int(self.trim_top_in * 72)
+        self.trim_bottom_pt = int(self.trim_bottom_in * 72)
+        self.trim_left_pt = int(self.trim_left_in * 72)
+        self.trim_right_pt = int(self.trim_right_in * 72)
+        
+        # Content area (within trim lines)
+        self.content_width_pt = self.PAGE_W_PT - self.trim_left_pt - self.trim_right_pt
+        self.content_height_pt = self.PAGE_H_PT - self.trim_top_pt - self.trim_bottom_pt
     
     def process_poster(self, source_pdf_path: Path, output_pdf_path: Path,
                        poster_id: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -83,14 +128,36 @@ class PDFProcessor:
         
         logger.info(f"Processing poster {poster_id} from {source_pdf_path}")
         
+        # Apply preview settings if provided
+        preview_settings = metadata.get('preview_settings')
+        effective_source_path = source_pdf_path
+        intermediate_path = None
+        if preview_settings:
+            logger.info(f"Applying preview settings for {poster_id}: {preview_settings}")
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
+                intermediate_path = Path(tmp.name)
+            try:
+                self._apply_preview_settings(source_pdf_path, intermediate_path, preview_settings)
+                effective_source_path = intermediate_path
+            except Exception as e:
+                logger.warning(f"Failed to apply preview settings: {e}. Using original PDF.")
+                if intermediate_path and intermediate_path.exists():
+                    intermediate_path.unlink()
+                intermediate_path = None
+        
         # Generate bug image
         bug_image = self._build_bug_image(poster_id, metadata)
         
         # Create PDF page with bug image
         bug_pdf_bytes = self._bug_image_to_pdf_page(bug_image)
         
-        # Append bug page to original PDF
-        self._append_bug_page_to_pdf(source_pdf_path, output_pdf_path, bug_pdf_bytes)
+        # Append bug page to effective source PDF
+        self._append_bug_page_to_pdf(effective_source_path, output_pdf_path, bug_pdf_bytes)
+        
+        # Clean up intermediate PDF if created
+        if intermediate_path and intermediate_path.exists():
+            intermediate_path.unlink()
         
         # Generate thumbnail
         thumbnail_path = self._generate_thumbnail(output_pdf_path, poster_id)
@@ -155,7 +222,7 @@ class PDFProcessor:
         """Generate QR code image."""
         qr = qrcode.QRCode(
             version=None,  # auto smallest version that fits
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            error_correction=constants.ERROR_CORRECT_L,
             box_size=box_size,
             border=border,
         )
@@ -178,6 +245,26 @@ class PDFProcessor:
         new_h = max(1, int(round(h * scale)))
         return logo.resize((new_w, new_h), Image.Resampling.LANCZOS)
     
+    def _create_background_page(self, fill_color: str) -> bytes:
+        """Create a single-page PDF with solid fill color background."""
+        from reportlab.lib.colors import HexColor, white
+        from reportlab.lib.pagesizes import portrait as portrait_size
+        
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf, pagesize=portrait_size((self.PAGE_W_PT, self.PAGE_H_PT)))
+        
+        try:
+            color = HexColor(fill_color)
+        except:
+            color = white
+        
+        c.setFillColor(color)
+        c.rect(0, 0, self.PAGE_W_PT, self.PAGE_H_PT, fill=1, stroke=0)
+        c.showPage()
+        c.save()
+        buf.seek(0)
+        return buf.read()
+    
     def _build_bug_image(self, poster_id: str, metadata: Dict[str, Any]) -> Image.Image:
         """Build bug image with QR code, text, and logo."""
         # Get configuration values
@@ -198,6 +285,14 @@ class PDFProcessor:
         attribution = metadata.get('attribution', '')
         title = metadata.get('title', '')
         price = metadata.get('price', self.global_config.get('price', 12.00))
+        # Ensure price is a float for formatting
+        if price is not None:
+            try:
+                price = float(price)
+            except (ValueError, TypeError):
+                price = 0.0
+        else:
+            price = 0.0
         seller = metadata.get('seller', self.global_config.get('seller', ''))
         slogans = metadata.get('slogans', self.global_config.get('slogans', []))
         
@@ -386,73 +481,132 @@ class PDFProcessor:
         
         logger.debug(f"Appended bug page to {output_pdf_path}")
     
-    def _generate_thumbnail(self, pdf_path: Path, poster_id: str) -> Path:
-        """Generate thumbnail image from first page of PDF."""
-        # Try to get thumbnail directory from config, fallback to relative path
-        thumbnail_dir = Path(self.global_config.get('thumbnail_dir', 'data/thumbnails'))
-        
-        # If path is absolute and doesn't exist, try relative to current directory
-        if thumbnail_dir.is_absolute() and not thumbnail_dir.parent.exists():
-            # Fallback to relative path
+    def _generate_thumbnail(self, source, poster_id: str) -> Path:
+        """Generate thumbnail from source (Path to PDF/image file or PIL Image)."""
+        # Try to get thumbnail directory from config, fallback to absolute /data/thumbnails
+        thumbnail_dir = Path(self.global_config.get('thumbnail_dir', '/data/thumbnails'))
+        # Ensure directory is within /data for security
+        data_path = Path('/data')
+        try:
+            # Resolve to absolute path and check if it's within data_path
+            resolved = thumbnail_dir.resolve()
+            if data_path.exists() and not resolved.is_relative_to(data_path):
+                # Fallback to relative path within current working directory
+                thumbnail_dir = Path('data/thumbnails')
+        except (RuntimeError, ValueError):
+            # If resolution fails (e.g., infinite symlink), use default
             thumbnail_dir = Path('data/thumbnails')
-        
         thumbnail_dir.mkdir(parents=True, exist_ok=True)
         
         thumbnail_path = thumbnail_dir / f"{poster_id}.jpg"
         
         try:
-            # Try using pdf2image if available
-            try:
-                from pdf2image import convert_from_path
-                
-                # Convert first page to image
-                images = convert_from_path(
-                    str(pdf_path),
-                    dpi=72,
-                    first_page=1,
-                    last_page=1,
-                    fmt='jpeg',
-                    thread_count=1
-                )
-                
-                if images:
-                    # Resize to thumbnail dimensions (300x400 max, maintain aspect)
-                    img = images[0]
-                    img.thumbnail((300, 400), Image.Resampling.LANCZOS)
-                    
-                    # Add poster ID watermark in corner
-                    draw = ImageDraw.Draw(img)
+            img = None
+            if isinstance(source, Path):
+                # Source is a file path
+                if source.suffix.lower() == '.pdf':
+                    # Convert PDF to image using pdf2image
                     try:
-                        font = self._load_font(14)
-                        draw.text((10, 10), poster_id, fill='white', font=font, stroke_width=2, stroke_fill='black')
-                    except:
-                        # Fallback if font loading fails
-                        draw.text((10, 10), poster_id, fill='white')
-                    
-                    img.save(thumbnail_path, 'JPEG', quality=85, optimize=True)
-                    logger.debug(f"Generated thumbnail at {thumbnail_path} from PDF")
-                    return thumbnail_path
-                    
-            except ImportError:
-                logger.warning("pdf2image not available, using placeholder")
-            except Exception as e:
-                logger.warning(f"pdf2image conversion failed: {e}, using placeholder")
+                        from pdf2image import convert_from_path
+                        images = convert_from_path(
+                            str(source),
+                            dpi=72,
+                            first_page=1,
+                            last_page=1,
+                            fmt='jpeg',
+                            thread_count=1
+                        )
+                        if images:
+                            img = images[0]
+                    except ImportError:
+                        logger.warning("pdf2image not available, using placeholder")
+                    except Exception as e:
+                        logger.warning(f"pdf2image conversion failed: {e}, using placeholder")
+                else:
+                    # Assume image file
+                    try:
+                        img = Image.open(source)
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                    except Exception as e:
+                        logger.warning(f"Failed to open image file: {e}")
+            else:
+                # Assume source is PIL Image
+                img = source
             
-            # Fallback: create placeholder
-            img = Image.new('RGB', (300, 400), color='lightgray')
-            draw = ImageDraw.Draw(img)
-            draw.text((50, 150), f"Poster: {poster_id}", fill='black')
-            draw.text((50, 180), "Thumbnail preview", fill='gray')
-            img.save(thumbnail_path, 'JPEG', quality=85)
-            logger.debug(f"Generated placeholder thumbnail at {thumbnail_path}")
+            if img is None:
+                # Fallback: create placeholder
+                img = Image.new('RGB', (300, 400), color='lightgray')
+                draw = ImageDraw.Draw(img)
+                draw.text((50, 150), f"Poster: {poster_id}", fill='black')
+                draw.text((50, 180), "Thumbnail preview", fill='gray')
+                img.save(thumbnail_path, 'JPEG', quality=85)
+                logger.debug(f"Generated placeholder thumbnail at {thumbnail_path}")
+                return thumbnail_path
+            
+            # Resize to thumbnail dimensions (300x400 max, maintain aspect)
+            img.thumbnail((300, 400), Image.Resampling.LANCZOS)
+            
+            # Add poster ID watermark in corner
+            try:
+                draw = ImageDraw.Draw(img)
+                font = self._load_font(14)
+                draw.text((10, 10), poster_id, fill='white', font=font, stroke_width=2, stroke_fill='black')
+            except Exception:
+                # Fallback if font loading fails
+                draw.text((10, 10), poster_id, fill='white')
+            
+            img.save(thumbnail_path, 'JPEG', quality=85, optimize=True)
+            logger.debug(f"Generated thumbnail at {thumbnail_path}")
+            return thumbnail_path
             
         except Exception as e:
             logger.error(f"Failed to generate thumbnail: {e}")
             # Create minimal placeholder on error
             img = Image.new('RGB', (300, 400), color='lightgray')
             img.save(thumbnail_path, 'JPEG')
+            return thumbnail_path
+    
+    def _apply_preview_settings(self, source_pdf_path: Path, output_pdf_path: Path, preview_settings: Dict[str, Any]) -> None:
+        """
+        Apply preview settings (bleed, alignment, fill color, length snapping, orientation) to PDF.
+        Transforms source PDF according to preview settings and bleed configuration.
+        Uses PNG-based processing for accurate positioning.
+        """
+        logger.info(f"Applying preview settings via PNG: {preview_settings}")
         
-        return thumbnail_path
+        # Extract settings with defaults
+        alignment = preview_settings.get('alignment', 'middle')
+        length_snap = preview_settings.get('length_snap', '')
+        orientation_setting = preview_settings.get('orientation', 'auto')
+        rotation = int(preview_settings.get('rotation', 0))
+        fill_color = preview_settings.get('fill_color', '#ffffff')
+        page_number = preview_settings.get('page_number', 1)
+        
+        # Validate page number
+        reader = PdfReader(str(source_pdf_path))
+        if page_number < 1 or page_number > len(reader.pages):
+            page_number = 1  # Default to first page
+        
+        # Convert source PDF page to PNG
+        png_image = self.convert_to_png(source_pdf_path, dpi=300, page_number=page_number)
+        
+        # Process PNG with trim and alignment
+        processed_image = self.process_png_with_trim(png_image, preview_settings, fill_color)
+        
+        # Save processed image as PDF
+        processed_image.save(output_pdf_path, format='PDF', resolution=300.0)
+        
+        logger.info(f"Applied preview settings via PNG to {output_pdf_path}")
+        
+        # Debug logging with dimensions
+        paper_width_in = self.PAGE_W_PT / 72.0
+        paper_height_in = self.PAGE_H_PT / 72.0
+        logger.debug(f"Paper size: {paper_width_in:.2f}x{paper_height_in:.2f} in")
+        logger.debug(f"Trim: T={self.trim_top_in:.2f}, B={self.trim_bottom_in:.2f}, "
+                     f"L={self.trim_left_in:.2f}, R={self.trim_right_in:.2f} in")
+        logger.debug(f"Alignment: {alignment}, Orientation: {orientation_setting}, "
+                     f"Length snap: {length_snap}, Fill color: {fill_color}")
     
     def _get_pdf_dimensions(self, pdf_path: Path) -> Tuple[int, int, str]:
         """Get PDF dimensions and orientation."""
@@ -555,3 +709,251 @@ class PDFProcessor:
             'processed_ids': [p['poster_id'] for p in processed],
             'error_details': errors,
         }
+     
+    def convert_image_to_pdf(self, image_file) -> io.BytesIO:
+        """Convert uploaded image file to PDF bytes."""
+        try:
+            # Open image
+            img = Image.open(image_file)
+            # Convert to RGB if necessary (e.g., PNG with alpha)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # Create white background
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Create PDF bytes
+            pdf_bytes = io.BytesIO()
+            img.save(pdf_bytes, format='PDF', resolution=300.0)
+            pdf_bytes.seek(0)
+            return pdf_bytes
+        except Exception as e:
+            logger.error(f"Failed to convert image to PDF: {e}")
+            raise PDFProcessorError(f"Image conversion failed: {e}")
+    
+    def convert_to_png(self, source_path: Path, dpi: int = 300, page_number: int = 1) -> Image.Image:
+        """Convert any file (PDF or image) to PNG Image."""
+        try:
+            if source_path.suffix.lower() == '.pdf':
+                # Convert PDF to image using pdf2image
+                images = convert_from_path(str(source_path), dpi=dpi, first_page=page_number, last_page=page_number)
+                if not images:
+                    raise PDFProcessorError(f"Failed to convert PDF to image: {source_path}")
+                return images[0]  # Return requested page
+            else:
+                # Open image file directly
+                img = Image.open(source_path)
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                return img
+        except Exception as e:
+            logger.error(f"Failed to convert to PNG: {e}")
+            raise PDFProcessorError(f"PNG conversion failed: {e}")
+    
+    def process_png_with_trim(self, png_image: Image.Image, preview_settings: Dict[str, Any], fill_color: str = '#ffffff') -> Image.Image:
+        """Process PNG image with trim lines and alignment."""
+        try:
+            # Extract settings
+            alignment = preview_settings.get('alignment', 'middle')
+            length_snap = preview_settings.get('length_snap', '')
+            orientation_setting = preview_settings.get('orientation', 'auto')
+            rotation = int(preview_settings.get('rotation', 0))
+            
+            # Get dimensions in pixels (assuming image is at target DPI)
+            img_width_px = png_image.width
+            img_height_px = png_image.height
+            
+            # Determine initial orientation (for auto-detection)
+            source_orientation = 'portrait' if img_height_px > img_width_px else 'landscape'
+            
+            # Step 1: Apply rotation if specified
+            if rotation != 0:
+                # Rotate image by specified angle (must be multiple of 90)
+                if rotation in (90, 270):
+                    png_image = png_image.rotate(rotation, expand=True)
+                else:  # 180
+                    png_image = png_image.rotate(rotation)
+                # Swap width/height if rotation is 90 or 270 degrees
+                if rotation % 180 != 0:
+                    img_width_px, img_height_px = img_height_px, img_width_px
+            else:
+                # Apply orientation-based rotation (legacy behavior)
+                target_orientation = orientation_setting
+                if orientation_setting == 'auto':
+                    target_orientation = source_orientation
+                needs_rotation = (
+                    (target_orientation == 'landscape' and source_orientation == 'portrait') or
+                    (target_orientation == 'portrait' and source_orientation == 'landscape')
+                )
+                if needs_rotation:
+                    png_image = png_image.rotate(90, expand=True)
+                    img_width_px, img_height_px = img_height_px, img_width_px
+            
+            # Step 2: Apply length snapping if specified
+            if length_snap:
+                try:
+                    target_length_in = float(length_snap)
+                    dpi = 300
+                    target_height_px = int(target_length_in * dpi)
+                    # Scale width proportionally to maintain aspect ratio
+                    scale_factor = target_height_px / img_height_px
+                    img_width_px = int(img_width_px * scale_factor)
+                    img_height_px = target_height_px
+                    # Resize image
+                    png_image = png_image.resize((img_width_px, img_height_px), Image.Resampling.LANCZOS)
+                except ValueError:
+                    logger.warning(f"Invalid length_snap value: {length_snap}")
+            
+            # Paper dimensions at 300 DPI (default)
+            dpi = 300
+            paper_width_in = self.PAGE_W_PT / 72.0
+            paper_height_in = self.PAGE_H_PT / 72.0
+            paper_width_px = int(paper_width_in * dpi)
+            paper_height_px = int(paper_height_in * dpi)
+            
+            # Trim margins in pixels (using instance variables)
+            trim_top_px = int(self.trim_top_in * dpi)
+            trim_bottom_px = int(self.trim_bottom_in * dpi)
+            trim_left_px = int(self.trim_left_in * dpi)
+            trim_right_px = int(self.trim_right_in * dpi)
+            
+            # Content area within trim lines
+            content_width_px = paper_width_px - trim_left_px - trim_right_px
+            content_height_px = paper_height_px - trim_top_px - trim_bottom_px
+            
+            # Scale image to fit within content area (maintain aspect ratio)
+            scale_x = content_width_px / img_width_px
+            scale_y = content_height_px / img_height_px
+            scale = min(scale_x, scale_y)
+            
+            scaled_width_px = int(img_width_px * scale)
+            scaled_height_px = int(img_height_px * scale)
+            
+            # Resize image
+            if scale != 1.0:
+                png_image = png_image.resize((scaled_width_px, scaled_height_px), Image.Resampling.LANCZOS)
+            
+            # Horizontal centering within trim lines
+            offset_x_px = trim_left_px + (content_width_px - scaled_width_px) // 2
+            
+            # Vertical alignment relative to trim lines
+            if alignment == 'top':
+                offset_y_px = trim_top_px
+            elif alignment == 'bottom':
+                offset_y_px = paper_height_px - trim_bottom_px - scaled_height_px
+            else:  # middle (default)
+                offset_y_px = trim_top_px + (content_height_px - scaled_height_px) // 2
+            
+            # Create canvas with fill color
+            if fill_color.lower() == '#ffffff' or fill_color.lower() == 'ffffff':
+                canvas_color = (255, 255, 255)
+            else:
+                # Parse hex color
+                hex_color = fill_color.lstrip('#')
+                canvas_color = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+            
+            canvas_img = Image.new('RGB', (paper_width_px, paper_height_px), canvas_color)
+            
+            # Paste scaled image onto canvas
+            canvas_img.paste(png_image, (offset_x_px, offset_y_px))
+            
+            # Debug logging
+            logger.debug(f"PNG processing: paper={paper_width_px}x{paper_height_px} px, "
+                        f"trim=[T={trim_top_px}, B={trim_bottom_px}, L={trim_left_px}, R={trim_right_px}] px, "
+                        f"content={content_width_px}x{content_height_px} px, "
+                        f"scaled={scaled_width_px}x{scaled_height_px} px, "
+                        f"offset=({offset_x_px}, {offset_y_px}) px, alignment={alignment}, "
+                        f"orientation={orientation_setting}, length_snap={length_snap}")
+            
+            print(f"\n=== PNG PROCESSING DEBUG ===")
+            print(f"Paper: {paper_width_px}x{paper_height_px} px")
+            print(f"Trim: T={trim_top_px}, B={trim_bottom_px}, L={trim_left_px}, R={trim_right_px} px")
+            print(f"Content area: {content_width_px}x{content_height_px} px")
+            print(f"Image scaled: {scaled_width_px}x{scaled_height_px} px")
+            print(f"Offset: ({offset_x_px}, {offset_y_px}) px")
+            print(f"Alignment: {alignment}")
+            print(f"Orientation: {orientation_setting}")
+            print(f"Length snap: {length_snap}")
+            print(f"============================\n")
+            
+            return canvas_img
+        except Exception as e:
+            logger.error(f"Failed to process PNG with trim: {e}")
+            raise PDFProcessorError(f"PNG processing failed: {e}")
+    
+    def process_poster_via_png(self, source_path: Path, output_pdf_path: Path, 
+                               poster_id: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Process poster using PNG intermediate for reliable positioning."""
+        try:
+            # Extract preview settings from metadata
+            preview_settings = metadata.get('preview_settings', {})
+            fill_color = preview_settings.get('fill_color', '#ffffff')
+            
+            # Step 1: Convert source to PNG
+            png_image = self.convert_to_png(source_path, dpi=300)
+            
+            # Step 2: Process PNG with trim and alignment
+            processed_image = self.process_png_with_trim(png_image, preview_settings, fill_color)
+            
+            # Step 3: Add bug overlay (existing bug generation)
+            bug_image = self._build_bug_image(poster_id, metadata)
+            
+            # Step 4: Create final PDF with bug page
+            # First, save processed image as PDF
+            processed_pdf_bytes = io.BytesIO()
+            processed_image.save(processed_pdf_bytes, format='PDF', resolution=300.0)
+            processed_pdf_bytes.seek(0)
+            
+            # Create bug page PDF
+            bug_pdf_bytes = self._create_bug_page_pdf(bug_image)
+            
+            # Combine processed page and bug page
+            writer = PdfWriter()
+            
+            # Add processed page
+            processed_reader = PdfReader(processed_pdf_bytes)
+            writer.add_page(processed_reader.pages[0])
+            
+            # Add bug page
+            bug_reader = PdfReader(io.BytesIO(bug_pdf_bytes))
+            writer.add_page(bug_reader.pages[0])
+            
+            # Save output PDF
+            with open(output_pdf_path, 'wb') as f:
+                writer.write(f)
+            
+            # Generate thumbnail from processed image (without bug)
+            thumbnail_path = self._generate_thumbnail(processed_image, poster_id)
+            
+            # Get dimensions from processed image
+            width_in = processed_image.width / 300.0
+            height_in = processed_image.height / 300.0
+            orientation = 'portrait' if height_in > width_in else 'landscape'
+            
+            return {
+                'dimensions': (width_in, height_in, orientation),
+                'thumbnail_path': thumbnail_path,
+                'processed_at': datetime.now().isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"Failed to process poster via PNG: {e}")
+            raise PDFProcessorError(f"PNG-based processing failed: {e}")
+    
+    def _create_bug_page_pdf(self, bug_image: Image.Image) -> bytes:
+        """Convert bug image to PDF page."""
+        buf = io.BytesIO()
+        bug_image.save(buf, format='PDF', resolution=300.0)
+        buf.seek(0)
+        return buf.read()
+    
